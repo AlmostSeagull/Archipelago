@@ -295,6 +295,8 @@ if baseclasses_loaded:
             settings.tiny_freeing_kong = self.random.randint(0, 4)
             settings.chunky_freeing_kong = self.random.randint(0, 4)
             spoiler = Spoiler(settings)
+            # Undo any changes to this location's name, until we find a better way to prevent this from confusing the tracker and the AP code that is responsible for sending out items
+            spoiler.LocationList[DK64RLocations.FactoryDonkeyDKArcade].name = "Factory Donkey DK Arcade Round 1"
             spoiler.settings.shuffled_location_types.append(Types.ArchipelagoItem)
             self.logic_holder = LogicVarHolder(spoiler, self.player)
 
@@ -544,6 +546,9 @@ if baseclasses_loaded:
                 "MedalCBRequirement": self.logic_holder.settings.medal_cb_req,
                 "BLockerValues": self.logic_holder.settings.BLockerEntryCount,
                 "RemovedBarriers": ", ".join([barrier.name for barrier in self.logic_holder.settings.remove_barriers_selected]),
+                "FairyRequirement": self.logic_holder.settings.rareware_gb_fairies,
+                "MermaidPearls": self.logic_holder.settings.mermaid_gb_pearls,
+                "JetpacReq": self.logic_holder.settings.medal_requirement,
             }
 
         def write_spoiler(self, spoiler_handle: typing.TextIO):
