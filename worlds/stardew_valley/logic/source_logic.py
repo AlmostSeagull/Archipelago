@@ -1,7 +1,6 @@
 import functools
 from typing import Union, Any, Iterable
 
-from .animal_logic import AnimalLogicMixin
 from .artisan_logic import ArtisanLogicMixin
 from .base_logic import BaseLogicMixin, BaseLogic
 from .grind_logic import GrindLogicMixin
@@ -12,9 +11,8 @@ from .received_logic import ReceivedLogicMixin
 from .region_logic import RegionLogicMixin
 from .requirement_logic import RequirementLogicMixin
 from .tool_logic import ToolLogicMixin
-from ..data.animal import IncubatorSource, OstrichIncubatorSource
 from ..data.artisan import MachineSource
-from ..data.game_item import GenericSource, Source, GameItem, CustomRuleSource
+from ..data.game_item import GenericSource, ItemSource, GameItem, CustomRuleSource, CompoundSource
 from ..data.harvest import ForagingSource, FruitBatsSource, MushroomCaveSource, SeasonalForagingSource, \
     HarvestCropSource, HarvestFruitTreeSource, ArtifactSpotSource
 from ..data.shop import ShopSource, MysteryBoxSource, ArtifactTroveSource, PrizeMachineSource, FishingTreasureChestSource
@@ -27,7 +25,7 @@ class SourceLogicMixin(BaseLogicMixin):
 
 
 class SourceLogic(BaseLogic[Union[SourceLogicMixin, HasLogicMixin, ReceivedLogicMixin, HarvestingLogicMixin, MoneyLogicMixin, RegionLogicMixin,
-ArtisanLogicMixin, ToolLogicMixin, RequirementLogicMixin, GrindLogicMixin, AnimalLogicMixin]]):
+                                  ArtisanLogicMixin, ToolLogicMixin, RequirementLogicMixin, GrindLogicMixin]]):
 
     def has_access_to_item(self, item: GameItem):
         rules = []
@@ -38,9 +36,13 @@ ArtisanLogicMixin, ToolLogicMixin, RequirementLogicMixin, GrindLogicMixin, Anima
         rules.append(self.logic.source.has_access_to_any(item.sources))
         return self.logic.and_(*rules)
 
-    def has_access_to_any(self, sources: Iterable[Source]):
+    def has_access_to_any(self, sources: Iterable[ItemSource]):
         return self.logic.or_(*(self.logic.source.has_access_to(source) & self.logic.requirement.meet_all_requirements(source.other_requirements)
                                 for source in sources))
+
+    def has_access_to_all(self, sources: Iterable[ItemSource]):
+        return self.logic.and_(*(self.logic.source.has_access_to(source) & self.logic.requirement.meet_all_requirements(source.other_requirements)
+                                 for source in sources))
 
     @functools.singledispatchmethod
     def has_access_to(self, source: Any):
@@ -53,6 +55,10 @@ ArtisanLogicMixin, ToolLogicMixin, RequirementLogicMixin, GrindLogicMixin, Anima
     @has_access_to.register
     def _(self, source: CustomRuleSource):
         return source.create_rule(self.logic)
+
+    @has_access_to.register
+    def _(self, source: CompoundSource):
+        return self.logic.source.has_access_to_all(source.sources)
 
     @has_access_to.register
     def _(self, source: ForagingSource):
@@ -82,14 +88,6 @@ ArtisanLogicMixin, ToolLogicMixin, RequirementLogicMixin, GrindLogicMixin, Anima
     @has_access_to.register
     def _(self, source: HarvestCropSource):
         return self.logic.harvesting.can_harvest_crop_from(source)
-
-    @has_access_to.register
-    def _(self, source: IncubatorSource):
-        return self.logic.animal.can_incubate(source.egg_item)
-
-    @has_access_to.register
-    def _(self, source: OstrichIncubatorSource):
-        return self.logic.animal.can_ostrich_incubate(source.egg_item)
 
     @has_access_to.register
     def _(self, source: MachineSource):
