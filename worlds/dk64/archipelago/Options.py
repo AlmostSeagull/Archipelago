@@ -356,16 +356,17 @@ class RemoveBarriers(OptionList):
 
 
 class HintItemRandomization(Toggle):
-    """Determines whether hint items are randomized."""
+    """???????"""
 
     display_name = "Randomize Hint"
-    default = False
+    default = True
 
 
 class RandomizeBlockers(Toggle):
     """Determines if B. Locker values are randomized."""
 
     display_name = "Randomizer B. Lockers"
+
 
 class MaximumBLocker(Range):
     """Determines the Maximum Value for B. Lockers if Randomize B.Lockers are enabled"""
@@ -375,11 +376,13 @@ class MaximumBLocker(Range):
     range_end = 201
     default = 64
 
-class ChaosBLockers(Toggle):
-    """Determines whether the "Secret" will be enabled."""
 
-    display_name = "Chaos B. Lockers"
-    default = True
+# class ChaosBLockers(Toggle):
+#     """Determines whether the "Secret" will be enabled."""
+
+#     display_name = "Chaos B. Lockers"
+#     default = True
+
 
 @dataclass
 class DK64Options(PerGameCommonOptions):
@@ -400,7 +403,7 @@ class DK64Options(PerGameCommonOptions):
     rareware_gb_fairies: RarewareGBRequirement
     randomize_blocker_required_amounts: RandomizeBlockers
     blocker_max: MaximumBLocker
-    secret_setting_lol: ChaosBLockers
+    # secret_setting_lol: ChaosBLockers
     open_lobbies: OpenLobbies
     switchsanity: SwitchSanity
     climbing_shuffle: ClimbingShuffle
@@ -412,7 +415,7 @@ class DK64Options(PerGameCommonOptions):
     hard_mode: HardModeEnabled
     hard_mode_selected: HardModeSelected
     mirror_mode: MirrorMode
-    hint_item_randomization: HintItemRandomization
+    secret_setting_lol: HintItemRandomization
     trap_fill_percentage: TrapFillPercentage
     bubble_trap_weight: BubbleTrapWeight
     reverse_trap_weight: ReverseTrapWeight

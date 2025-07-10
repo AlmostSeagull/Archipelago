@@ -616,8 +616,8 @@ if baseclasses_loaded:
                         deep_count += major_count - len(major_hints)
                     # Handle error that's theoretically impossible. Joy
                     if len(deep_hints) < deep_count:
-                        # Okay, I swear 1 test gen threw an error about this, but it seems to be gone now... so if you're reading this, PLEASE REPORT THIS ERROR!
                         print("No hints. stage_generate_output might be crashing")
+                        # Prevent this part of the code from crashing, so we get the actual stack trace from the other thread
                         for i in range(50):
                             deep_hints.append("no hint, sorry...")
                     deep_hints = self.spoiler.settings.random.sample(deep_hints, deep_count)
@@ -647,7 +647,7 @@ if baseclasses_loaded:
                         elif hintedItem in shopkeepers:
                             text = f"{hintedItem.name} has gone on a space mission to \x07{self.foreignMicroHints[hintedItem][0]} {self.foreignMicroHints[hintedItem][1]}\x07.".upper()
                         for letter in text:
-                            if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
+                            if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
                                 text = text.replace(letter, " ")
                         self.spoiler.microhints[DK64RItem.ItemList[hintedItem].name] = text
 
@@ -763,7 +763,7 @@ if baseclasses_loaded:
                             if not multiworld.can_beat_game(state):
                                 autoworld.woth_item_locations.append(loc)
                     # Also gather any information on microhinted items
-                    if loc.item.player in players and loc.item.name in microHintItemNames and microHintItemNames[loc.item.name] in microhint_categories[autoworld.spoiler.settings.microhints_enabled]:
+                    if player in players and loc.item.name in microHintItemNames and microHintItemNames[loc.item.name] in microhint_categories[autoworld.spoiler.settings.microhints_enabled]:
                         if player != loc.player:
                             if microHintItemNames[loc.item.name] in autoworld.foreignMicroHints.keys():
                                 autoworld.foreignMicroHints[microHintItemNames[loc.item.name]].append([multiworld.get_player_name(loc.player), loc.name[:80]])
@@ -960,8 +960,8 @@ if baseclasses_loaded:
             if item_obj is None:
                 print(location.item.name)
                 # TODO, figure out crash
-                print(item.name)
-                raise Exception(f"{item.name} not found in ItemList. (Yes I made it crash again, no it shouldn't run on non-donk games)")
+                print(f"{item.name}, PLEASE REPORT THIS PRINT!!!!! It's the error, and I don't want to make it crash if I don't have to!")
+                # raise Exception(f"{item.name} not found in ItemList. (Yes I made it crash again, no it shouldn't run on non-donk games)")
                 return True
             if item_obj.type == Types.JunkItem:
                 # In a location that can't have junk
@@ -979,7 +979,7 @@ if baseclasses_loaded:
                 else:
                     text = f"Looking for \x07{location.item.name[:40]}\x07? Try looking in \x0d{location.name}\x0d.".upper()
                 for letter in text:
-                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
+                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
                         text = text.replace(letter, " ")
                 hints.append(text)
             return hints
@@ -994,7 +994,7 @@ if baseclasses_loaded:
                 else:
                     text = f"\x0d{location.name}\x0d has your \x07{location.item.name}\x07".upper()
                 for letter in text:
-                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ.0123456789,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
+                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
                         text = text.replace(letter, " ")
                 hints.append(text)
             return hints
