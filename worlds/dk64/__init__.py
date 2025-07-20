@@ -136,7 +136,8 @@ if baseclasses_loaded:
     from version import version
     from randomizer.Patching.EnemyRando import randomize_enemies_0
     from randomizer.Fill import ShuffleItems, Generate_Spoiler, IdentifyMajorItems
-    from randomizer.CompileHints import compileMicrohints, CompileArchipelagoHints
+    from randomizer.CompileHints import compileMicrohints
+    from worlds.dk64.archipelago.Hints import CompileArchipelagoHints
     from randomizer.Enums.Types import Types, BarrierItems
     from randomizer.Enums.Kongs import Kongs
     from randomizer.Enums.Levels import Levels
@@ -487,9 +488,13 @@ if baseclasses_loaded:
                 self.spoiler.UpdateExits()
 
             # Handle hint preparation by initiating some variables
-            self.major_item_locations = []
-            self.woth_item_locations = []
-            self.deep_location_items = []
+            self.hint_data = {
+                "kong": [],
+                "key": [],
+                "woth": [],
+                "major": [],
+                "deep": [],
+            }
             self.foreignMicroHints = {}
 
             # Handle locations that start empty due to being junk
@@ -592,36 +597,7 @@ if baseclasses_loaded:
                     self.hint_data_available.wait()
 
                 if hints_enabled:
-                    # Finalize hints
-
-                    # Settings
-                    woth_count = 10
-                    major_count = 7
-                    deep_count = 8
-
-                    # Creating the hints
-                    # pre-creating is... a choice that I made. I don't like the idea of CompileHints knowing what a multiworld is
-                    # I should create an AP Hints.py file
-                    woth_hints = self.parseDirectItemHints(self.woth_item_locations)
-                    major_hints = self.parseDirectItemHints(self.major_item_locations)
-                    deep_hints = self.parseDeepHints(self.deep_location_items)
-                    woth_hints = self.spoiler.settings.random.sample(woth_hints, min(woth_count, len(woth_hints)))
-                    if len(woth_hints) < woth_count:
-                        major_count += woth_count - len(woth_hints)
-                        deep_count += woth_count - len(woth_hints)
-                    woth_hints = woth_hints + woth_hints
-                    major_hints = [hint for hint in major_hints if hint not in woth_hints]
-                    major_hints = self.spoiler.settings.random.sample(major_hints, min(major_count, len(major_hints)))
-                    if len(major_hints) < major_count:
-                        deep_count += major_count - len(major_hints)
-                    # Handle error that's theoretically impossible. Joy
-                    if len(deep_hints) < deep_count:
-                        print("No hints. stage_generate_output might be crashing")
-                        # Prevent this part of the code from crashing, so we get the actual stack trace from the other thread
-                        for i in range(50):
-                            deep_hints.append("no hint, sorry...")
-                    deep_hints = self.spoiler.settings.random.sample(deep_hints, deep_count)
-                    CompileArchipelagoHints(self.spoiler, woth_hints, major_hints, deep_hints)
+                    CompileArchipelagoHints(self, self.hint_data)
 
                 if microhints_enabled:
                     # Finalize microhints
@@ -753,15 +729,19 @@ if baseclasses_loaded:
                     autoworld = multiworld.worlds[player]
                     locworld = multiworld.worlds[loc.player]
                     if players:
+                        if loc.item.name in ("Donkey", "Diddy", "Lanky", "Tiny", "Chunky"):
+                            locworld.hint_data["kong"].append(loc)
+                        if loc.item.name in ("Key 1", "Key 2", "Key 4", "Key 5"):
+                            locworld.hint_data["key"].append(loc)
                         if loc.player in players and loc.name in deep_location_names:
-                            locworld.deep_location_items.append(loc)
-                        if player in players and autoworld.isMajorItem(loc.item) and loc.name:
-                            autoworld.major_item_locations.append(loc)
+                            locworld.hint_data["deep"].append(loc)
+                        if player in players and autoworld.isMajorItem(loc.item) and (not autoworld.spoiler.settings.key_8_helm or loc.name != "The End of Helm"):
+                            autoworld.hint_data["major"].append(loc)
                             # Skip item at location and see if game is still beatable
                             state = CollectionState(multiworld)
                             state.locations_checked.add(loc)
                             if not multiworld.can_beat_game(state):
-                                autoworld.woth_item_locations.append(loc)
+                                autoworld.hint_data["woth"].append(loc)
                     # Also gather any information on microhinted items
                     if player in players and loc.item.name in microHintItemNames and microHintItemNames[loc.item.name] in microhint_categories[autoworld.spoiler.settings.microhints_enabled]:
                         if player != loc.player:
@@ -968,36 +948,6 @@ if baseclasses_loaded:
                 if loc_obj.type in (Types.Shop, Types.Shockwave, Types.Crown, Types.PreGivenMove, Types.CrateItem, Types.Enemies) or (loc_obj.type == Types.Key or loc_obj.level == Levels.HideoutHelm):
                     return True
             return False
-
-        def parseDirectItemHints(self, locations_to_hint: list) -> list:
-            """Write direct item hints for the given list of locations."""
-            hints = []
-            text = ""
-            for location in locations_to_hint:
-                if location.player != self.player:
-                    text = f"Looking for \x07{location.item.name[:40]}\x07? Ask {self.multiworld.get_player_name(location.player)} to try looking in \x0d{location.name[:80]}\x0d.".upper()
-                else:
-                    text = f"Looking for \x07{location.item.name[:40]}\x07? Try looking in \x0d{location.name}\x0d.".upper()
-                for letter in text:
-                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
-                        text = text.replace(letter, " ")
-                hints.append(text)
-            return hints
-
-        def parseDeepHints(self, locations_to_hint: list) -> list:
-            """Write deep item hints for the given list of locations."""
-            hints = []
-            text = ""
-            for location in locations_to_hint:
-                if location.item.player != self.player:
-                    text = f"\x0d{location.name}\x0d has {self.multiworld.get_player_name(location.item.player)}'s \x07{location.item.name[:40]}\x07.".upper()
-                else:
-                    text = f"\x0d{location.name}\x0d has your \x07{location.item.name}\x07".upper()
-                for letter in text:
-                    if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
-                        text = text.replace(letter, " ")
-                hints.append(text)
-            return hints
 
         def collect(self, state: CollectionState, item: Item) -> bool:
             """Collect the item."""
