@@ -1,8 +1,37 @@
 # from worlds.dk64 import DK64World
 from worlds.dk64.randomizer.CompileHints import UpdateSpoilerHintList, getRandomHintLocation, replaceKongNameWithKrusha
+from worlds.dk64.randomizer.Enums.Maps import Maps
 from worlds.dk64.randomizer.Lists.WrinklyHints import ClearHintMessages
 from worlds.dk64.randomizer.Patching.UpdateHints import UpdateHint
 
+boss_names = {
+    Maps.JapesBoss: "Army Dillo 1",
+    Maps.AztecBoss: "Dogadon 1",
+    Maps.FactoryBoss: "Mad Jack",
+    Maps.GalleonBoss: "Pufftoss",
+    Maps.FungiBoss: "Dogadon 2",
+    Maps.CavesBoss: "Army Dillo 2",
+    Maps.CastleBoss: "King Kut Out",
+    Maps.KroolDonkeyPhase: "DK Phase",
+    Maps.KroolDiddyPhase: "Diddy Phase",
+    Maps.KroolLankyPhase: "Lanky Phase",
+    Maps.KroolTinyPhase: "Tiny Phase",
+    Maps.KroolChunkyPhase: "Chunky Phase",
+}
+boss_colors = {
+    Maps.JapesBoss: "\x08",
+    Maps.AztecBoss: "\x04",
+    Maps.FactoryBoss: "\x0c",
+    Maps.GalleonBoss: "\x06",
+    Maps.FungiBoss: "\x07",
+    Maps.CavesBoss: "\x0a",
+    Maps.CastleBoss: "\x09",
+    Maps.KroolDonkeyPhase: "\x04",
+    Maps.KroolDiddyPhase: "\x05",
+    Maps.KroolLankyPhase: "\x06",
+    Maps.KroolTinyPhase: "\x07",
+    Maps.KroolChunkyPhase: "\x08",
+}
 
 def CompileArchipelagoHints(world, hint_data: list):
     """Insert Archipelago hints."""
@@ -23,8 +52,14 @@ def CompileArchipelagoHints(world, hint_data: list):
     woth_locations = hint_data["woth"]
     major_locations = hint_data["major"]
     deep_locations = hint_data["deep"]
+    already_hinted = kong_locations + key_locations
 
     # Creating the hints
+
+    # K. Rool order hint
+    hints.append(parseKRoolHint(world))
+    hints_remaining -= 1
+
     # Kong hints
     for kong_loc in kong_locations:
         hints.append(parseKongHint(world, kong_loc))
@@ -37,8 +72,10 @@ def CompileArchipelagoHints(world, hint_data: list):
 
     # Woth hints
     woth_count = min(min(len(woth_locations), woth_count), hints_remaining)
+    woth_locations = [x for x in woth_locations if x not in already_hinted]
     woth_locations = world.spoiler.settings.random.sample(woth_locations, woth_count)
     for woth_loc in woth_locations:
+        already_hinted.append(woth_loc)
         this_hint = parseWothHint(world, woth_loc)
         hints.append(this_hint)
         woth_duplicates.append(this_hint)
@@ -46,6 +83,7 @@ def CompileArchipelagoHints(world, hint_data: list):
 
     # Major item hints
     major_count = min(min(len(major_locations), major_count), hints_remaining)
+    major_locations = [x for x in major_locations if x not in already_hinted]
     major_locations = world.spoiler.settings.random.sample(major_locations, major_count)
     for major_loc in major_locations:
         hints.append(parseMajorItemHint(world, major_loc))
@@ -72,6 +110,7 @@ def CompileArchipelagoHints(world, hint_data: list):
             hints_remaining -= 1
 
     for hint in hints:
+        print(hint.replace("\x04", "").replace("\x05", "").replace("\x06", "").replace("\x07", "").replace("\x08", "").replace("\x09", "").replace("\x0a", "").replace("\x0b", "").replace("\x0c", "").replace("\x0d", "").replace("\x0e", "").replace("\x0f", ""))
         hint_location = getRandomHintLocation(random=world.spoiler.settings.random)
         UpdateHint(hint_location, hint)
     UpdateSpoilerHintList(world.spoiler)
@@ -104,9 +143,9 @@ def parseWothHint(world, location):
     """Write a woth item hint for the given location."""
     text = ""
     if location.player != world.player:
-        text = f"Woth item \x07{location.item.name[:40]}\x07 is in {world.multiworld.get_player_name(location.player)} \x0d{location.name[:80]}\x0d.".upper()
+        text = f"{world.multiworld.get_player_name(location.player)} \x0d{location.name[:80]}\x0d is on the \x04Way of the Hoard\x04.".upper()
     else:
-        text = f"Woth item \x07{location.item.name[:40]}\x07 is in your \x0d{location.name}\x0d.".upper()
+        text = f"Your \x0d{location.name}\x0d is on the \x04Way of the Hoard\x04.".upper()
     for letter in text:
         if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
             text = text.replace(letter, " ")
@@ -131,6 +170,17 @@ def parseDeepHint(world, location):
         text = f"\x0d{location.name}\x0d has {world.multiworld.get_player_name(location.item.player)}'s \x07{location.item.name[:40]}\x07.".upper()
     else:
         text = f"\x0d{location.name}\x0d has your \x07{location.item.name}\x07".upper()
+    for letter in text:
+        if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
+            text = text.replace(letter, " ")
+    return text
+
+def parseKRoolHint(world):
+    """Write the K. Rool order hint for the given location."""
+    text = ""
+    kong_krool_order = [boss_colors[map_id] + boss_names[map_id] + boss_colors[map_id] for map_id in world.spoiler.settings.krool_order]
+    kong_krool_text = ", then ".join(kong_krool_order)
+    text = f"\x08The final battle\x08 will be against {kong_krool_text}.".upper()
     for letter in text:
         if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;'S-()% \x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d":
             text = text.replace(letter, " ")

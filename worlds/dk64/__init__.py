@@ -589,6 +589,7 @@ if baseclasses_loaded:
                 ShuffleItems(spoiler)
 
                 spoiler.UpdateLocations(spoiler.LocationList)
+                self.updateBossKongs(spoiler)
                 compileMicrohints(spoiler)
                 # Could add a hints on/off setting?
                 microhints_enabled = True
@@ -826,6 +827,7 @@ if baseclasses_loaded:
                 "StartingKeyList": ", ".join([key.name for key in self.spoiler.settings.starting_key_list]),
                 "HardShooting": self.options.hard_shooting.value,
                 "Junk": self.junked_locations,
+                "HintsInPool": self.options.secret_setting_lol.value,
             }
 
         def write_spoiler(self, spoiler_handle: typing.TextIO):
@@ -948,6 +950,21 @@ if baseclasses_loaded:
                 if loc_obj.type in (Types.Shop, Types.Shockwave, Types.Crown, Types.PreGivenMove, Types.CrateItem, Types.Enemies) or (loc_obj.type == Types.Key or loc_obj.level == Levels.HideoutHelm):
                     return True
             return False
+        
+        def updateBossKongs(self, spoiler):
+            """Prevent a bug with microhints hinting boss locations as if they were Any Kong locations."""
+            locations = {
+                DK64RLocations.JapesKey: spoiler.settings.boss_kongs[Levels.JungleJapes],
+                DK64RLocations.AztecKey: spoiler.settings.boss_kongs[Levels.AngryAztec],
+                DK64RLocations.FactoryKey: spoiler.settings.boss_kongs[Levels.FranticFactory],
+                DK64RLocations.GalleonKey: spoiler.settings.boss_kongs[Levels.GloomyGalleon],
+                DK64RLocations.ForestKey: spoiler.settings.boss_kongs[Levels.FungiForest],
+                DK64RLocations.CavesKey: spoiler.settings.boss_kongs[Levels.CrystalCaves],
+                DK64RLocations.CastleKey: spoiler.settings.boss_kongs[Levels.CreepyCastle],
+            }
+
+            for loc in locations.keys():
+                spoiler.LocationList[loc].kong = locations[loc]
 
         def collect(self, state: CollectionState, item: Item) -> bool:
             """Collect the item."""
@@ -1005,4 +1022,5 @@ if baseclasses_loaded:
             relevant_data["JunkedLocations"] = junk
             relevant_data["BLockerEntryItems"] = [BarrierItems[item] for item in blocker_item_type]
             relevant_data["BLockerEntryCount"] = blocker_item_quantity
+            relevant_data["HintsInPool"] = slot_data["HintsInPool"]
             return relevant_data
